@@ -1,11 +1,12 @@
 {
   "name": "learn-starter",
-  "version": "0.1.0",
+  "version": "0.0.0-development",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "semantic-release": "semantic-release"
   },
   "dependencies": {
     "classnames": "^2.3.0",
@@ -15,6 +16,13 @@
     "react-dom": "17.0.1",
     "remark": "^13.0.0",
     "remark-html": "^13.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shashipriyamishra/nextpro.git"
+  },
+  "publishConfig": {
+    "access": "restricted"
   },
   "devDependencies": {
     "semantic-release": "^17.4.2"
