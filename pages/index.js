@@ -23,8 +23,8 @@ export default function Home({ allPostsData }) {
         <p>
           Hello my name is shashi Priya Mishra , I am a frontend developer with
           10 years of experience and i worked on technologies like HTML5, CSS,
-          JAVASCRIPT, ANGULAR, REACT, NEXT.JS, TYPESCRIPT. I am currently living
-          in bangalore
+          CSS3 JAVASCRIPT, ANGULAR, REACT, NEXT.JS, TYPESCRIPT. I am currently
+          living in bangalore
         </p>
         <p>Contact me on - +91 9871454936 email- shashipriyamishra@gmail.com</p>
         <ul className={utilStyles.list}>
