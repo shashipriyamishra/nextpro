@@ -26,7 +26,7 @@ export default function Home({ allPostsData }) {
           JAVASCRIPT, ANGULAR, REACT, NEXT.JS, TYPESCRIPT. I am currently living
           in bangalore
         </p>
-        <p>Contact me on - 9871454936 email- shashipriyamishra@gmail.com</p>
+        <p>Contact me on - +91 9871454936 email- shashipriyamishra@gmail.com</p>
         <ul className={utilStyles.list}>
           {allPostsData.map(({ id, date, title }) => (
             <li className={utilStyles.listItem} key={id}>
