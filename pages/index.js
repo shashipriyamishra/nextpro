@@ -27,7 +27,7 @@ export default function Home({ allPostsData }) {
           living in Bangalore India
         </p>
         <p>
-          Contact me here on- +91 9871454936 email- shashipriyamishra@gmail.com
+          Contact me here - +91 9871454936 email- shashipriyamishra@gmail.com
         </p>
         <ul className={utilStyles.list}>
           {allPostsData.map(({ id, date, title }) => (
