@@ -26,7 +26,9 @@ export default function Home({ allPostsData }) {
           CSS3 JAVASCRIPT, ANGULAR, REACT, NEXT.JS, TYPESCRIPT. I am currently
           living in Bangalore India
         </p>
-        <p>Contact on - +91 9871454936 email- shashipriyamishra@gmail.com</p>
+        <p>
+          Contact me here - +91 9871454936 email- shashipriyamishra@gmail.com
+        </p>
         <ul className={utilStyles.list}>
           {allPostsData.map(({ id, date, title }) => (
             <li className={utilStyles.listItem} key={id}>
