@@ -1,3 +1,4 @@
+require 'git'
 require 'sinatra'
 require 'octokit'
 require 'dotenv/load' # Manages environment variables
@@ -63,12 +64,23 @@ class GHAapp < Sinatra::Application
     # # # # # # # # # # # #
     # Get the event type from the HTTP_X_GITHUB_EVENT header
     case request.env['HTTP_X_GITHUB_EVENT']
+    when 'check_run'
+      # Check that the event is being sent to this app
+      if @payload['check_run']['app']['id'].to_s === APP_IDENTIFIER
+        case @payload['action']
+        when 'created'
+          initiate_check_run
+        when 'rerequested'
+          create_check_run
+        end
+      end
     when 'check_suite'
       # A new check_suite has been created. Create a new check run with status queued
       if @payload['action'] == 'requested' || @payload['action'] == 'rerequested'
         create_check_run
       end
     end
+
     200 # success status
   end
 
@@ -78,6 +90,128 @@ class GHAapp < Sinatra::Application
     # # # # # # # # # # # # # # # # #
     # ADD YOUR HELPER METHODS HERE  #
     # # # # # # # # # # # # # # # # #
+
+
+    # Clones the repository to the current working directory, updates the
+    # contents using Git pull, and checks out the ref.
+    #
+    # full_repo_name  - The owner and repo. Ex: octocat/hello-world
+    # repository      - The repository name
+    # ref             - The branch, commit SHA, or tag to check out
+    def clone_repository(full_repo_name, repository, ref)
+      @git = Git.clone("https://x-access-token:#{@installation_token.to_s}@github.com/#{full_repo_name}.git", repository)
+      pwd = Dir.getwd()
+      Dir.chdir(repository)
+      @git.pull
+      @git.checkout(ref)
+      Dir.chdir(pwd)
+    end
+
+    # Start the CI process
+    def initiate_check_run
+      # Once the check run is created, you'll update the status of the check run
+      # to 'in_progress' and run the CI process. When the CI finishes, you'll
+      # update the check run status to 'completed' and add the CI results.
+
+      # ***** RUN A CI TEST *****
+      full_repo_name = @payload['repository']['full_name']
+      repository     = @payload['repository']['name']
+      head_sha       = @payload['check_run']['head_sha']
+
+      clone_repository(full_repo_name, repository, head_sha)
+
+      # Run RuboCop on all files in the repository
+      @report = `rubocop '#{repository}' --format json`
+      logger.debug @report
+      `rm -rf #{repository}`
+      @output = JSON.parse @report
+
+      annotations = []
+      # You can create a maximum of 50 annotations per request to the Checks
+      # API. To add more than 50 annotations, use the "Update a check run" API
+      # endpoint. This example code limits the number of annotations to 50.
+      # See /rest/reference/checks#update-a-check-run
+      # for details.
+      max_annotations = 50
+
+      # RuboCop reports the number of errors found in "offense_count"
+      if @output['summary']['offense_count'] == 0
+        conclusion = 'success'
+      else
+        conclusion = 'neutral'
+        @output['files'].each do |file|
+
+          # Only parse offenses for files in this app's repository
+          file_path = file['path'].gsub(/#{repository}\//,'')
+          annotation_level = 'notice'
+
+          # Parse each offense to get details and location
+          file['offenses'].each do |offense|
+            # Limit the number of annotations to 50
+            next if max_annotations == 0
+            max_annotations -= 1
+
+            start_line   = offense['location']['start_line']
+            end_line     = offense['location']['last_line']
+            start_column = offense['location']['start_column']
+            end_column   = offense['location']['last_column']
+            message      = offense['message']
+
+            # Create a new annotation for each error
+            annotation = {
+              path: file_path,
+              start_line: start_line,
+              end_line: end_line,
+              start_column: start_column,
+              end_column: end_column,
+              annotation_level: annotation_level,
+              message: message
+            }
+            # Annotations only support start and end columns on the same line
+            if start_line == end_line
+              annotation.merge({start_column: start_column, end_column: end_column})
+            end
+
+            annotations.push(annotation)
+          end
+        end
+      end
+
+      # Updated check run summary and text parameters
+      summary = "Octo RuboCop summary\n-Offense count: #{@output['summary']['offense_count']}\n-File count: #{@output['summary']['target_file_count']}\n-Target file count: #{@output['summary']['inspected_file_count']}"
+      text = "Octo RuboCop version: #{@output['metadata']['rubocop_version']}"
+
+      # Mark the check run as complete! And if there are warnings, share them.
+      @installation_client.update_check_run(
+        @payload['repository']['full_name'],
+        @payload['check_run']['id'],
+        status: 'completed',
+        conclusion: conclusion,
+        output: {
+          title: 'Octo RuboCop',
+          summary: summary,
+          text: text,
+          annotations: annotations
+        },
+        actions: [{
+          label: 'Fix this',
+          description: 'Automatically fix all linter notices.',
+          identifier: 'fix_rubocop_notices'
+        }],
+        accept: 'application/vnd.github+json'
+      )
+
+      # ***** RUN A CI TEST *****
+
+      # Mark the check run as complete!
+      @installation_client.update_check_run(
+        @payload['repository']['full_name'],
+        @payload['check_run']['id'],
+        status: 'completed',
+        conclusion: 'success',
+        accept: 'application/vnd.github+json'
+      )
+    end
 
     # Saves the raw payload and converts the payload to JSON format
     def get_payload_request(request)
