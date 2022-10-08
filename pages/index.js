@@ -24,10 +24,10 @@ export default function Home({ allPostsData }) {
           Hello My name is shashi Priya Mishra , I am a frontend developer with
           10 years of experience and i worked on technologies like HTML5, CSS,
           CSS3 JAVASCRIPT, ANGULAR, REACT, NEXT.JS, TYPESCRIPT. I am currently
-          living in Bangalore India
+          living in Bangalore
         </p>
         <p>
-          Contact me here - +91 9871454936 email- shashipriyamishra@gmail.com
+          Contact me here on - +91 9871454936 email- shashipriyamishra@gmail.com
         </p>
         <ul className={utilStyles.list}>
           {allPostsData.map(({ id, date, title }) => (
